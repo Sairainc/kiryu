@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import DevicesIcon from '@mui/icons-material/Devices';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwkOkcsESUubHlJnBoSkSpo8SYowYa2eZbIOpLCAc94qbJlbE9dcqi04mYeTQmb7fwi/exec";
 
@@ -14,6 +20,7 @@ type TemperatureHumidityData = {
 
 type TimeRange = '1hour' | '6hours' | '24hours' | '7days' | 'all';
 type DisplayType = 'both' | 'temperature' | 'humidity';
+type View = 'dashboard' | 'devices' | 'table';
 
 const Dashboard: React.FC = () => {
   const [data, setData] = useState<TemperatureHumidityData[]>([]);
@@ -23,6 +30,7 @@ const Dashboard: React.FC = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('24hours');
   const [displayType, setDisplayType] = useState<DisplayType>('both');
+  const [currentView, setCurrentView] = useState<View>('dashboard');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,6 +95,23 @@ const Dashboard: React.FC = () => {
 
   const { temp, humid } = getLatestReadings();
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className={`p-3 rounded-lg shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <p className="text-sm font-medium mb-1">{label}</p>
+          {payload.map((pld: any, index: number) => (
+            <p key={index} className="text-sm" style={{ color: pld.color }}>
+              {pld.name}: {pld.value}
+              {pld.name.includes('温度') ? '°C' : '%'}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className={`min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100"}`}>
       <div className="flex flex-col lg:flex-row">
@@ -98,10 +123,43 @@ const Dashboard: React.FC = () => {
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 lg:mb-4 hidden lg:block">メニュー</p>
               <ul className="flex lg:flex-col justify-around lg:space-y-2">
                 <li className="flex-1 lg:flex-none">
-                  <a href="#" className={`flex items-center justify-center lg:justify-start p-3 rounded-lg ${darkMode ? "bg-indigo-600 text-white" : "bg-indigo-100 text-indigo-700"}`}>
-                    <span className="text-xl lg:mr-3">🏠</span>
+                  <button
+                    onClick={() => setCurrentView('dashboard')}
+                    className={`w-full flex items-center justify-center lg:justify-start p-3 rounded-lg ${
+                      currentView === 'dashboard'
+                        ? (darkMode ? "bg-indigo-500/20 text-indigo-300" : "bg-indigo-50 text-indigo-600")
+                        : (darkMode ? "text-gray-400 hover:bg-gray-700" : "text-gray-500 hover:bg-gray-100")
+                    }`}
+                  >
+                    <DashboardIcon className="text-xl lg:mr-3" />
                     <span className="hidden lg:inline">ホーム</span>
-                  </a>
+                  </button>
+                </li>
+                <li className="flex-1 lg:flex-none">
+                  <button
+                    onClick={() => setCurrentView('devices')}
+                    className={`w-full flex items-center justify-center lg:justify-start p-3 rounded-lg ${
+                      currentView === 'devices'
+                        ? (darkMode ? "bg-indigo-500/20 text-indigo-300" : "bg-indigo-50 text-indigo-600")
+                        : (darkMode ? "text-gray-400 hover:bg-gray-700" : "text-gray-500 hover:bg-gray-100")
+                    }`}
+                  >
+                    <DevicesIcon className="text-xl lg:mr-3" />
+                    <span className="hidden lg:inline">デバイス</span>
+                  </button>
+                </li>
+                <li className="flex-1 lg:flex-none">
+                  <button
+                    onClick={() => setCurrentView('table')}
+                    className={`w-full flex items-center justify-center lg:justify-start p-3 rounded-lg ${
+                      currentView === 'table'
+                        ? (darkMode ? "bg-indigo-500/20 text-indigo-300" : "bg-indigo-50 text-indigo-600")
+                        : (darkMode ? "text-gray-400 hover:bg-gray-700" : "text-gray-500 hover:bg-gray-100")
+                    }`}
+                  >
+                    <TableChartIcon className="text-xl lg:mr-3" />
+                    <span className="hidden lg:inline">テーブル</span>
+                  </button>
                 </li>
               </ul>
             </nav>
@@ -111,117 +169,226 @@ const Dashboard: React.FC = () => {
         {/* メインコンテンツ */}
         <div className="w-full lg:ml-64 p-4 lg:p-6 mb-16 lg:mb-0">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6 lg:mb-8">
-            <h2 className="text-2xl font-semibold mb-4 sm:mb-0">ダッシュボード</h2>
+            <h2 className="text-2xl font-semibold mb-4 sm:mb-0">
+              {currentView === 'dashboard' && 'ダッシュボード'}
+              {currentView === 'devices' && 'デバイス'}
+              {currentView === 'table' && 'テーブル'}
+            </h2>
             <div className="flex items-center space-x-4">
               <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full bg-gray-200">
-                {darkMode ? "☀️" : "🌙"}
+                {darkMode ? <WbSunnyIcon /> : <DarkModeIcon />}
               </button>
               <button onClick={() => window.location.reload()} className="p-2 rounded-full bg-blue-500 text-white">
-                ↻
+                <RefreshIcon />
               </button>
             </div>
           </div>
 
-          {/* グラフ */}
-          <div className={`p-4 lg:p-6 rounded-lg shadow-md ${darkMode ? "bg-gray-800" : "bg-white"} mb-6 lg:mb-8`}>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-4 sm:space-y-0">
-              <h3 className="text-xl font-semibold">温度・湿度の推移</h3>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-                <select
-                  value={displayType}
-                  onChange={(e) => setDisplayType(e.target.value as DisplayType)}
-                  className={`px-3 py-2 rounded-lg ${
-                    darkMode 
-                      ? "bg-gray-700 text-white border-gray-600" 
-                      : "bg-white text-gray-700 border-gray-300"
-                  } border w-full sm:w-auto`}
-                >
-                  <option value="both">温度と湿度</option>
-                  <option value="temperature">温度のみ</option>
-                  <option value="humidity">湿度のみ</option>
-                </select>
-                <select
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-                  className={`px-3 py-2 rounded-lg ${
-                    darkMode 
-                      ? "bg-gray-700 text-white border-gray-600" 
-                      : "bg-white text-gray-700 border-gray-300"
-                  } border w-full sm:w-auto`}
-                >
-                  <option value="1hour">1時間</option>
-                  <option value="6hours">6時間</option>
-                  <option value="24hours">24時間</option>
-                  <option value="7days">7日間</option>
-                  <option value="all">すべて</option>
-                </select>
+          {currentView === 'dashboard' && (
+            <>
+              {/* 最新データカード */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className={`p-6 rounded-lg shadow-md ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">最新の温度</p>
+                      <h3 className="text-3xl font-bold mt-1">{temp}°C</h3>
+                    </div>
+                    <div className={`p-3 rounded-full ${darkMode ? "bg-red-500/10" : "bg-red-100"}`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${darkMode ? "text-red-400" : "text-red-500"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5v6m0 0v6m0-6h6m-6 0H3" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      最終更新: {filteredData[filteredData.length - 1]?.timestamp || '--'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className={`p-6 rounded-lg shadow-md ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">最新の湿度</p>
+                      <h3 className="text-3xl font-bold mt-1">{humid}%</h3>
+                    </div>
+                    <div className={`p-3 rounded-full ${darkMode ? "bg-blue-500/10" : "bg-blue-100"}`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${darkMode ? "text-blue-400" : "text-blue-500"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      最終更新: {filteredData[filteredData.length - 1]?.timestamp || '--'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* グラフ */}
+              <div className={`p-4 lg:p-6 rounded-lg shadow-md ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-4 sm:space-y-0">
+                  <h3 className="text-xl font-semibold">温度・湿度の推移</h3>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                    <select
+                      value={displayType}
+                      onChange={(e) => setDisplayType(e.target.value as DisplayType)}
+                      className={`px-3 py-2 rounded-lg ${
+                        darkMode 
+                          ? "bg-gray-700 text-white border-gray-600" 
+                          : "bg-white text-gray-700 border-gray-300"
+                      } border w-full sm:w-auto`}
+                    >
+                      <option value="both">温度と湿度</option>
+                      <option value="temperature">温度のみ</option>
+                      <option value="humidity">湿度のみ</option>
+                    </select>
+                    <select
+                      value={timeRange}
+                      onChange={(e) => setTimeRange(e.target.value as TimeRange)}
+                      className={`px-3 py-2 rounded-lg ${
+                        darkMode 
+                          ? "bg-gray-700 text-white border-gray-600" 
+                          : "bg-white text-gray-700 border-gray-300"
+                      } border w-full sm:w-auto`}
+                    >
+                      <option value="1hour">1時間</option>
+                      <option value="6hours">6時間</option>
+                      <option value="24hours">24時間</option>
+                      <option value="7days">7日間</option>
+                      <option value="all">すべて</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="h-[400px] lg:h-[500px] relative">
+                  {loading ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : error ? (
+                    <div className="absolute inset-0 flex items-center justify-center text-red-500">
+                      <p>{error}</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={filteredData}
+                        margin={{ top: 10, right: 30, left: 10, bottom: 30 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke={darkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="timestamp"
+                          angle={-30}
+                          textAnchor="end"
+                          height={60}
+                          tick={{
+                            fill: darkMode ? "#9CA3AF" : "#4B5563",
+                            fontSize: 12
+                          }}
+                          stroke={darkMode ? "#4B5563" : "#9CA3AF"}
+                        />
+                        <YAxis
+                          tick={{
+                            fill: darkMode ? "#9CA3AF" : "#4B5563",
+                            fontSize: 12
+                          }}
+                          stroke={darkMode ? "#4B5563" : "#9CA3AF"}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend
+                          wrapperStyle={{
+                            paddingTop: "20px"
+                          }}
+                        />
+                        {(displayType === 'both' || displayType === 'temperature') && (
+                          <Line
+                            type="monotone"
+                            dataKey="temperature"
+                            name="温度 (°C)"
+                            stroke="#F87171"
+                            strokeWidth={2}
+                            dot={false}
+                            activeDot={{ r: 6, strokeWidth: 0 }}
+                          />
+                        )}
+                        {(displayType === 'both' || displayType === 'humidity') && (
+                          <Line
+                            type="monotone"
+                            dataKey="humidity"
+                            name="湿度 (%)"
+                            stroke="#60A5FA"
+                            strokeWidth={2}
+                            dot={false}
+                            activeDot={{ r: 6, strokeWidth: 0 }}
+                          />
+                        )}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {currentView === 'devices' && (
+            <div className={`p-4 lg:p-6 rounded-lg shadow-md ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+              <h3 className="text-xl font-semibold mb-4">接続されているデバイス</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+                  <div className="flex items-center space-x-4">
+                    <DevicesIcon className="text-3xl" />
+                    <div>
+                      <h4 className="font-semibold">温度・湿度センサー 1</h4>
+                      <p className="text-sm text-gray-500">ステータス: オンライン</p>
+                      <p className="text-sm text-gray-500">最終更新: {filteredData[filteredData.length - 1]?.timestamp || '--'}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="h-[300px] lg:h-[400px] relative">
-              {loading ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
-              ) : error ? (
-                <div className="absolute inset-0 flex items-center justify-center text-red-500">
-                  <p>{error}</p>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={filteredData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#444" : "#eee"} />
-                    <XAxis dataKey="timestamp" angle={-30} textAnchor="end" height={50} tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Legend />
-                    {(displayType === 'both' || displayType === 'temperature') && (
-                      <Line type="monotone" dataKey="temperature" name="温度 (°C)" stroke="#ef4444" strokeWidth={2} />
-                    )}
-                    {(displayType === 'both' || displayType === 'humidity') && (
-                      <Line type="monotone" dataKey="humidity" name="湿度 (%)" stroke="#3b82f6" strokeWidth={2} />
-                    )}
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
+          )}
 
-          {/* データテーブル */}
-          <div className={`rounded-lg shadow-md overflow-hidden ${darkMode ? "bg-gray-800" : "bg-white"}`}>
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-xl font-semibold">最近のデータ</h3>
-            </div>
-            <div className="overflow-x-auto">
-              {loading ? (
-                <div className="flex items-center justify-center p-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center p-8 text-red-500">
-                  <p>{error}</p>
-                </div>
-              ) : (
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className={darkMode ? "bg-gray-700" : "bg-gray-50"}>
-                    <tr>
-                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase">日時</th>
-                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase">温度 (°C)</th>
-                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase">湿度 (%)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredData.slice(-5).map((item, index) => (
-                      <tr key={index} className={index % 2 === 0 ? (darkMode ? "bg-gray-700" : "bg-gray-50") : ""}>
-                        <td className="px-4 lg:px-6 py-3 text-sm">{item.timestamp}</td>
-                        <td className="px-4 lg:px-6 py-3 text-sm">{item.temperature.toFixed(1)}</td>
-                        <td className="px-4 lg:px-6 py-3 text-sm">{item.humidity.toFixed(1)}</td>
+          {currentView === 'table' && (
+            <div className={`p-4 lg:p-6 rounded-lg shadow-md ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+              <h3 className="text-xl font-semibold mb-4">すべてのデータ</h3>
+              <div className="overflow-x-auto">
+                {loading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : error ? (
+                  <div className="flex items-center justify-center p-8 text-red-500">
+                    <p>{error}</p>
+                  </div>
+                ) : (
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className={darkMode ? "bg-gray-700" : "bg-gray-50"}>
+                      <tr>
+                        <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase">日時</th>
+                        <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase">温度 (°C)</th>
+                        <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase">湿度 (%)</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+                    </thead>
+                    <tbody>
+                      {filteredData.map((item, index) => (
+                        <tr key={index} className={index % 2 === 0 ? (darkMode ? "bg-gray-700" : "bg-gray-50") : ""}>
+                          <td className="px-4 lg:px-6 py-3 text-sm">{item.timestamp}</td>
+                          <td className="px-4 lg:px-6 py-3 text-sm">{item.temperature.toFixed(1)}</td>
+                          <td className="px-4 lg:px-6 py-3 text-sm">{item.humidity.toFixed(1)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
