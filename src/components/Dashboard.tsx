@@ -8,19 +8,29 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import LockIcon from '@mui/icons-material/Lock';
+import ThermostatIcon from '@mui/icons-material/Thermostat';
+import WaterDropIcon from '@mui/icons-material/WaterDrop';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwkOkcsESUubHlJnBoSkSpo8SYowYa2eZbIOpLCAc94qbJlbE9dcqi04mYeTQmb7fwi/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxW89i7C6XuiJYKFkq2RbPQkKgrXRE5ugDSPW8VIN9apXgaZ1t6DgBgDk52KMMA_WhY/exec";
 
 type TemperatureHumidityData = {
   timestamp: string;
   temperature: number;
   humidity: number;
   originalDate: Date;
+  doorStatus?: 'open' | 'closed';
+  imageData?: {
+    reading: number;
+  };
 };
 
 type TimeRange = '1hour' | '6hours' | '24hours' | '7days' | 'all';
 type DisplayType = 'both' | 'temperature' | 'humidity';
 type View = 'dashboard' | 'devices' | 'table';
+type TableDataType = 'temperature' | 'image';
 
 const Dashboard: React.FC = () => {
   const [data, setData] = useState<TemperatureHumidityData[]>([]);
@@ -31,6 +41,8 @@ const Dashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('24hours');
   const [displayType, setDisplayType] = useState<DisplayType>('both');
   const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [doorStatus, setDoorStatus] = useState<'open' | 'closed'>('closed');
+  const [tableDataType, setTableDataType] = useState<TableDataType>('temperature');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,11 +57,18 @@ const Dashboard: React.FC = () => {
             timestamp: formattedTime,
             temperature: item.temperature || 0,
             humidity: item.humidity || 0,
-            originalDate: date
+            originalDate: date,
+            doorStatus: item.doorStatus || 'closed',
+            imageData: item.imageData || {
+              reading: 0
+            }
           };
         });
 
         setData(formattedData);
+        if (formattedData.length > 0) {
+          setDoorStatus(formattedData[formattedData.length - 1].doorStatus);
+        }
         setLoading(false);
       } catch (err) {
         setError("データの取得に失敗しました");
@@ -58,6 +77,8 @@ const Dashboard: React.FC = () => {
     };
 
     fetchData();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -187,7 +208,7 @@ const Dashboard: React.FC = () => {
           {currentView === 'dashboard' && (
             <>
               {/* 最新データカード */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div className={`p-6 rounded-lg shadow-md ${darkMode ? "bg-gray-800" : "bg-white"}`}>
                   <div className="flex items-center justify-between">
                     <div>
@@ -217,6 +238,29 @@ const Dashboard: React.FC = () => {
                       <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${darkMode ? "text-blue-400" : "text-blue-500"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                       </svg>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      最終更新: {filteredData[filteredData.length - 1]?.timestamp || '--'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className={`p-6 rounded-lg shadow-md ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">ドアの状態</p>
+                      <h3 className="text-3xl font-bold mt-1">
+                        {doorStatus === 'open' ? '開' : '閉'}
+                      </h3>
+                    </div>
+                    <div className={`p-3 rounded-full ${doorStatus === 'open' ? (darkMode ? "bg-green-500/10" : "bg-green-100") : (darkMode ? "bg-gray-500/10" : "bg-gray-100")}`}>
+                      {doorStatus === 'open' ? (
+                        <LockOpenIcon className={`h-6 w-6 ${darkMode ? "text-green-400" : "text-green-500"}`} />
+                      ) : (
+                        <LockIcon className={`h-6 w-6 ${darkMode ? "text-gray-400" : "text-gray-500"}`} />
+                      )}
                     </div>
                   </div>
                   <div className="mt-4">
@@ -342,10 +386,41 @@ const Dashboard: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
                   <div className="flex items-center space-x-4">
-                    <DevicesIcon className="text-3xl" />
+                    <div className="flex flex-col items-center">
+                      <ThermostatIcon className="text-3xl text-red-500" />
+                      <WaterDropIcon className="text-3xl text-blue-500" />
+                    </div>
                     <div>
-                      <h4 className="font-semibold">温度・湿度センサー 1</h4>
+                      <h4 className="font-semibold">温度・湿度センサー</h4>
                       <p className="text-sm text-gray-500">ステータス: オンライン</p>
+                      <p className="text-sm text-gray-500">最終更新: {filteredData[filteredData.length - 1]?.timestamp || '--'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+                  <div className="flex items-center space-x-4">
+                    {doorStatus === 'open' ? (
+                      <LockOpenIcon className="text-3xl text-green-500" />
+                    ) : (
+                      <LockIcon className="text-3xl text-gray-500" />
+                    )}
+                    <div>
+                      <h4 className="font-semibold">ドアセンサー</h4>
+                      <p className="text-sm text-gray-500">ステータス: オンライン</p>
+                      <p className="text-sm text-gray-500">状態: {doorStatus === 'open' ? '開' : '閉'}</p>
+                      <p className="text-sm text-gray-500">最終更新: {filteredData[filteredData.length - 1]?.timestamp || '--'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+                  <div className="flex items-center space-x-4">
+                    <CameraAltIcon className="text-3xl text-purple-500" />
+                    <div>
+                      <h4 className="font-semibold">イメージセンサー</h4>
+                      <p className="text-sm text-gray-500">ステータス: オンライン</p>
+                      <p className="text-sm text-gray-500">解像度: 1920x1080</p>
                       <p className="text-sm text-gray-500">最終更新: {filteredData[filteredData.length - 1]?.timestamp || '--'}</p>
                     </div>
                   </div>
@@ -356,7 +431,21 @@ const Dashboard: React.FC = () => {
 
           {currentView === 'table' && (
             <div className={`p-4 lg:p-6 rounded-lg shadow-md ${darkMode ? "bg-gray-800" : "bg-white"}`}>
-              <h3 className="text-xl font-semibold mb-4">すべてのデータ</h3>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-4 sm:space-y-0">
+                <h3 className="text-xl font-semibold">すべてのデータ</h3>
+                <select
+                  value={tableDataType}
+                  onChange={(e) => setTableDataType(e.target.value as TableDataType)}
+                  className={`px-3 py-2 rounded-lg ${
+                    darkMode 
+                      ? "bg-gray-700 text-white border-gray-600" 
+                      : "bg-white text-gray-700 border-gray-300"
+                  } border`}
+                >
+                  <option value="temperature">温度・湿度データ</option>
+                  <option value="image">イメージセンサーデータ</option>
+                </select>
+              </div>
               <div className="overflow-x-auto">
                 {loading ? (
                   <div className="flex items-center justify-center p-8">
@@ -366,7 +455,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex items-center justify-center p-8 text-red-500">
                     <p>{error}</p>
                   </div>
-                ) : (
+                ) : tableDataType === 'temperature' ? (
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className={darkMode ? "bg-gray-700" : "bg-gray-50"}>
                       <tr>
@@ -381,6 +470,23 @@ const Dashboard: React.FC = () => {
                           <td className="px-4 lg:px-6 py-3 text-sm">{item.timestamp}</td>
                           <td className="px-4 lg:px-6 py-3 text-sm">{item.temperature.toFixed(1)}</td>
                           <td className="px-4 lg:px-6 py-3 text-sm">{item.humidity.toFixed(1)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className={darkMode ? "bg-gray-700" : "bg-gray-50"}>
+                      <tr>
+                        <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase">日時</th>
+                        <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase">Reading値</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredData.map((item, index) => (
+                        <tr key={index} className={index % 2 === 0 ? (darkMode ? "bg-gray-700" : "bg-gray-50") : ""}>
+                          <td className="px-4 lg:px-6 py-3 text-sm">{item.timestamp}</td>
+                          <td className="px-4 lg:px-6 py-3 text-sm">{item.imageData?.reading.toFixed(1)}</td>
                         </tr>
                       ))}
                     </tbody>
